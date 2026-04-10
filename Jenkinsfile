@@ -27,9 +27,11 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
-                        // Securely using variables instead of hardcoded passwords
-                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
-                        sh "docker push ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG}"
+                        // Using your preferred stdin style but with secure masking
+                        sh """
+                        echo "${DOCKER_HUB_PASSWORD}" | docker login -u "${DOCKER_HUB_USERNAME}" --password-stdin
+                        docker push "${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG}"
+                        """
                     }
                 }
             }
