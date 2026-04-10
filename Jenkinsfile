@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'yourdockerhub' // Change this to your username
+        DOCKER_HUB_USER = 'INZIMAM777' // Changed from placeholder to your username
         APP_NAME = 'grade-app'
         IMAGE_TAG = "${env.BRANCH_NAME ?: 'latest'}"
     }
