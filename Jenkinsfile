@@ -1,60 +1,56 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         DOCKER_HUB_USER = 'inzimam777'
         APP_NAME = 'grade-app'
-        IMAGE_TAG = "${env.BRANCH_NAME ?: 'latest'}"
+        IMAGE_TAG = 'v3'
     }
 
     stages {
 
+        stage('Clean') {
+            steps {
+                deleteDir()
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                sh 'git clone -b v3 https://github.com/INZIMAM777/grade-app.git .'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Building image for version: ${IMAGE_TAG}"
-                    sh "docker build -t ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG} ."
-                }
+                sh "docker build -t ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG} ."
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
-                        // Using your preferred stdin style but with secure masking
-                        sh """
-                        echo "${DOCKER_HUB_PASSWORD}" | docker login -u "${DOCKER_HUB_USERNAME}" --password-stdin
-                        docker push "${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG}"
-                        """
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh """
+                    echo "$PASS" | docker login -u "$USER" --password-stdin
+                    docker push ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    def yamlFile = "k8s/${IMAGE_TAG}-deployment.yaml"
-                    def serviceFile = "k8s/${IMAGE_TAG}-service.yaml"
-                    
-                    if (fileExists(yamlFile)) {
-                        sh "kubectl apply -f ${yamlFile}"
-                        sh "kubectl apply -f ${serviceFile}"
-                    } else {
-                        echo "Deployment file ${yamlFile} not found, skipping deploy stage."
-                    }
-                }
+                sh "kubectl apply -f k8s/v3-deployment.yaml"
+                sh "kubectl apply -f k8s/v3-service.yaml"
             }
-        }
-    }
-
-    post {
-        success {
-            echo "🎉 Successfully deployed ${APP_NAME}:${IMAGE_TAG}!"
-        }
-        failure {
-            echo "❌ Deployment failed. Please check the logs."
         }
     }
 }
