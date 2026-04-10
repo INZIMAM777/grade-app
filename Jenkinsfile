@@ -8,11 +8,16 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Building image for branch: ${env.BRANCH_NAME}"
+                    echo "Building image for version: ${IMAGE_TAG}"
                     sh "docker build -t ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG} ."
                 }
             }
@@ -22,6 +27,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                        // Securely using variables instead of hardcoded passwords
                         sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
                         sh "docker push ${DOCKER_HUB_USER}/${APP_NAME}:${IMAGE_TAG}"
                     }
@@ -39,7 +45,7 @@ pipeline {
                         sh "kubectl apply -f ${yamlFile}"
                         sh "kubectl apply -f ${serviceFile}"
                     } else {
-                        echo "No specific YAML found for ${IMAGE_TAG}, skipping K8s deploy."
+                        echo "Deployment file ${yamlFile} not found, skipping deploy stage."
                     }
                 }
             }
@@ -47,8 +53,11 @@ pipeline {
     }
 
     post {
-        always {
-            echo "Pipeline finished."
+        success {
+            echo "🎉 Successfully deployed ${APP_NAME}:${IMAGE_TAG}!"
+        }
+        failure {
+            echo "❌ Deployment failed. Please check the logs."
         }
     }
 }
