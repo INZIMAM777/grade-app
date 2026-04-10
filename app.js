@@ -41,7 +41,7 @@ app.post('/grade', (req, res) => {
         else grade = "Fail";
 
         res.json({ 
-            version: "v3",
+            version: "v1",
             status: "Success",
             data: { 
                 total, 
