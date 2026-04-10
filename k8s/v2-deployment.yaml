@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grade-app-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grade-v2
+  template:
+    metadata:
+      labels:
+        app: grade-v2
+    spec:
+      containers:
+      - name: grade-app
+        image: yourdockerhub/grade-app:v2
+        ports:
+        - containerPort: 3000
