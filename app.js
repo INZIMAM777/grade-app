@@ -1,7 +1,10 @@
 const express = require('express');
 const app = express();
 
+const path = require('path');
+
 app.use(express.json());
+app.use(express.static('public'));
 
 app.post('/grade', (req, res) => {
     try {
@@ -14,7 +17,6 @@ app.post('/grade', (req, res) => {
             });
         }
 
-        // Validate that all marks are numbers and within range 0-100
         for (let mark of marks) {
             if (typeof mark !== 'number' || mark < 0 || mark > 100) {
                 return res.status(400).json({ 
@@ -28,15 +30,25 @@ app.post('/grade', (req, res) => {
         const avg = total / marks.length;
 
         let grade;
-        if (avg >= 90) grade = "A";
-        else if (avg >= 75) grade = "B";
-        else if (avg >= 50) grade = "C";
+        if (avg >= 95) grade = "A+";
+        else if (avg >= 90) grade = "A";
+        else if (avg >= 85) grade = "B+";
+        else if (avg >= 80) grade = "B";
+        else if (avg >= 75) grade = "C+";
+        else if (avg >= 70) grade = "C";
+        else if (avg >= 60) grade = "D";
+        else if (avg >= 50) grade = "E";
         else grade = "Fail";
 
         res.json({ 
-            version: "v2",
+            version: "v3",
             status: "Success",
-            data: { total, avg: avg.toFixed(2), grade } 
+            data: { 
+                total, 
+                avg: avg.toFixed(2), 
+                grade,
+                count: marks.length
+            } 
         });
     } catch (err) {
         res.status(500).json({ error: "Server Error", message: err.message });
@@ -44,7 +56,7 @@ app.post('/grade', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.send("Grade App v2 is running with enhanced validation!");
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(3000, () => console.log("Running on port 3000"));
